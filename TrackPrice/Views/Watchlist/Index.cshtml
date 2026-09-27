@@ -1,0 +1,96 @@
+﻿@model IEnumerable<TrackPrice.Models.Watchlist>
+
+@{
+    ViewData["Title"] = "My Watchlist";
+}
+
+<div class="container py-5">
+
+    <div class="mb-4">
+        <h1 class="fw-bold">My Watchlist</h1>
+        <p class="text-muted mb-0">
+            Products you are currently tracking
+        </p>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            Your watchlist is empty.
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+
+            @foreach (var item in Model)
+            {
+                <div class="col-md-6 col-lg-4">
+
+                    <div class="card h-100 shadow-sm border-0">
+
+                        @if (!string.IsNullOrEmpty(item.Product.ImageUrl))
+                        {
+                            <img src="@item.Product.ImageUrl"
+                                 class="card-img-top"
+                                 style="height:220px; object-fit:contain;"
+                                 alt="@item.Product.Name" />
+                        }
+
+                        <div class="card-body">
+
+                            <h5 class="card-title fw-bold">
+                                @item.Product.Name
+                            </h5>
+
+                            @if (!string.IsNullOrEmpty(item.Product.Category))
+                            {
+                                <span class="badge bg-secondary mb-2">
+                                    @item.Product.Category
+                                </span>
+                            }
+
+                            @if (item.Product.ProductListings.Any())
+                            {
+                                <hr />
+
+                                <h6 class="fw-bold">Current Price</h6>
+
+                                @foreach (var listing in item.Product.ProductListings)
+                                {
+                                    <div class="d-flex justify-content-between mb-2">
+
+                                        <span>
+                                            @listing.Store.Name
+                                        </span>
+
+                                        <strong>
+                                            ₹@listing.CurrentPrice.ToString("N2")
+                                        </strong>
+
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-muted">
+                                    No price information available.
+                                </p>
+                            }
+
+                            <small class="text-muted">
+                                Added on
+                                @item.AddedAt.ToLocalTime().ToString("dd MMM yyyy")
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    }
+
+</div>

@@ -57,6 +57,7 @@
 
                     <hr />
 
+                    <!-- Store Prices -->
                     <h4 class="fw-bold mb-3">Store Prices</h4>
 
                     @if (Model.ProductListings.Any())
@@ -116,6 +117,70 @@
                             No store price information available.
                         </p>
                     }
+
+                    <!-- Add to Watchlist -->
+                    <div class="mt-4">
+
+                        <form asp-controller="Watchlist"
+                              asp-action="Add"
+                              method="post">
+
+                            <input type="hidden"
+                                   name="productId"
+                                   value="@Model.Id" />
+
+                            <button type="submit"
+                                    class="btn btn-outline-primary">
+                                ❤️ Add to Watchlist
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                    <!-- Set Price Alert -->
+                    <div class="mt-4">
+
+                        <h4 class="fw-bold">
+                            🔔 Set Price Alert
+                        </h4>
+
+                        <p class="text-muted">
+                            Get notified when this product reaches your target price.
+                        </p>
+
+                        <form asp-controller="PriceAlert"
+                              asp-action="Create"
+                              method="post">
+
+                            <input type="hidden"
+                                   name="productId"
+                                   value="@Model.Id" />
+
+                            <div class="input-group" style="max-width: 450px;">
+
+                                <span class="input-group-text">
+                                    ₹
+                                </span>
+
+                                <input type="number"
+                                       name="targetPrice"
+                                       class="form-control"
+                                       placeholder="Enter target price"
+                                       min="1"
+                                       step="0.01"
+                                       required />
+
+                                <button type="submit"
+                                        class="btn btn-warning">
+                                    Set Alert
+                                </button>
+
+                            </div>
+
+                        </form>
+
+                    </div>
 
                 </div>
 

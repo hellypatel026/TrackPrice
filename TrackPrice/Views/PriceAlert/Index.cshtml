@@ -1,0 +1,100 @@
+﻿@model IEnumerable<TrackPrice.Models.PriceAlert>
+
+@{
+    ViewData["Title"] = "Price Alerts";
+}
+
+<div class="container py-5">
+
+    <div class="mb-4">
+        <h1 class="fw-bold">Price Alerts</h1>
+
+        <p class="text-muted mb-0">
+            Products you are monitoring for a target price
+        </p>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            You have no price alerts yet.
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+
+            @foreach (var alert in Model)
+            {
+                <div class="col-md-6 col-lg-4">
+
+                    <div class="card h-100 shadow-sm border-0">
+
+                        <div class="card-body">
+
+                            <h5 class="fw-bold">
+                                @alert.Product.Name
+                            </h5>
+
+                            @if (!string.IsNullOrEmpty(alert.Product.Category))
+                            {
+                                <span class="badge bg-secondary mb-3">
+                                    @alert.Product.Category
+                                </span>
+                            }
+
+                            <hr />
+
+                            <p class="mb-2">
+                                <strong>Target Price:</strong>
+                                ₹@alert.TargetPrice.ToString("N2")
+                            </p>
+
+                            @if (alert.Product.ProductListings.Any())
+                            {
+                                <p class="mb-2">
+                                    <strong>Current Price:</strong>
+                                    ₹@(alert.Product.ProductListings
+                                        .Min(p => p.CurrentPrice)
+                                        .ToString("N2"))
+                                </p>
+                            }
+                            else
+                            {
+                                <p class="mb-2 text-muted">
+                                    <strong>Current Price:</strong>
+                                    Not available
+                                </p>
+                            }
+
+                            @if (alert.IsTriggered)
+                            {
+                                <span class="badge bg-success">
+                                    Alert Triggered
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">
+                                    Monitoring
+                                </span>
+                            }
+
+                            <p class="text-muted small mt-3 mb-0">
+                                Created:
+                                @(alert.CreatedAt
+                                    .ToLocalTime()
+                                    .ToString("dd MMM yyyy"))
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    }
+
+</div>
