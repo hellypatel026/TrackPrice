@@ -3,20 +3,36 @@
 }
 
 <div class="text-center mt-5">
-    <h1 class="display-4 fw-bold">TrackPrice</h1>
+
+    <h1 class="display-4 fw-bold">
+        TrackPrice
+    </h1>
 
     <p class="lead">
         Track prices. Compare stores. Save money.
     </p>
 
-    <div class="mt-4">
-        <input type="text"
-               class="form-control d-inline-block"
-               placeholder="Search for a product..."
-               style="max-width: 500px;" />
+    <form asp-controller="Products"
+          asp-action="Index"
+          method="get"
+          class="mt-4">
 
-        <button class="btn btn-primary mt-3">
-            Search
-        </button>
-    </div>
+        <div class="d-flex justify-content-center gap-2">
+
+            <input type="text"
+                   name="search"
+                   class="form-control"
+                   placeholder="Search for a product..."
+                   style="max-width: 700px;"
+                   required />
+
+            <button type="submit"
+                    class="btn btn-primary">
+                Search
+            </button>
+
+        </div>
+
+    </form>
+
 </div>

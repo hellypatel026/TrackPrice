@@ -1,24 +1,34 @@
-﻿@model IEnumerable<TrackPrice.Models.Product>
+﻿@model IEnumerable<TrackPrice.Models.ReefApiProduct>
 
 @{
-    ViewData["Title"] = "Products";
+    ViewData["Title"] = "Search Results";
 }
 
 <div class="container py-5">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="fw-bold">Products</h1>
+    <!-- Header -->
+    <div class="mb-4">
+
+        <h1 class="fw-bold">
+            Search Results
+        </h1>
+
+        @if (!string.IsNullOrWhiteSpace(ViewBag.Search))
+        {
             <p class="text-muted mb-0">
-                Browse products tracked by TrackPrice
+                Results for
+                "<strong>@ViewBag.Search</strong>"
             </p>
-        </div>
+        }
+
     </div>
 
+
+    <!-- No Results -->
     @if (!Model.Any())
     {
         <div class="alert alert-info">
-            No products are available yet.
+            No products found.
         </div>
     }
     else
@@ -31,67 +41,127 @@
 
                     <div class="card h-100 shadow-sm border-0">
 
-                        @if (!string.IsNullOrEmpty(product.ImageUrl))
+                        <!-- Product Image -->
+                        @if (!string.IsNullOrWhiteSpace(product.Image))
                         {
-                            <img src="@product.ImageUrl"
+                            <img src="@product.Image"
                                  class="card-img-top"
-                                 style="height:220px; object-fit:contain;"
-                                 alt="@product.Name" />
+                                 style="height:220px; object-fit:contain; padding:15px;"
+                                 alt="@product.Title" />
+                        }
+                        else
+                        {
+                            <div class="bg-light d-flex align-items-center justify-content-center"
+                                 style="height:220px;">
+
+                                <span class="text-muted">
+                                    No Image Available
+                                </span>
+
+                            </div>
                         }
 
-                        <div class="card-body">
 
+                        <div class="card-body d-flex flex-column">
+
+                            <!-- Product Name -->
                             <h5 class="card-title fw-bold">
-                                @product.Name
+                                @product.Title
                             </h5>
 
-                            @if (!string.IsNullOrEmpty(product.Category))
+
+                            <!-- Category -->
+                            @if (!string.IsNullOrWhiteSpace(product.Category))
                             {
-                                <span class="badge bg-secondary mb-2">
+                                <span class="badge bg-secondary align-self-start mb-3">
                                     @product.Category
                                 </span>
                             }
 
-                            @if (!string.IsNullOrEmpty(product.Description))
+
+                            <!-- Price -->
+                            <div class="mb-2">
+
+                                <span class="fs-4 fw-bold">
+                                    ₹@product.Price.ToString("N2")
+                                </span>
+
+                            </div>
+
+
+                            <!-- MRP + Discount -->
+                            @if (product.Mrp.HasValue &&
+                                 product.Mrp.Value > product.Price)
                             {
-                                <p class="card-text text-muted">
-                                    @product.Description
-                                </p>
-                            }
+                                <div>
 
-                            @if (product.ProductListings.Any())
-                            {
-                                <hr />
+                                    <span class="text-muted text-decoration-line-through">
+                                        ₹@product.Mrp.Value.ToString("N2")
+                                    </span>
 
-                                <h6 class="fw-bold">Available Prices</h6>
-
-                                @foreach (var listing in product.ProductListings)
-                                {
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-
-                                        <span>
-                                            @listing.Store.Name
+                                    @if (product.DiscountPercent > 0)
+                                    {
+                                        <span class="badge bg-success ms-2">
+                                            @product.DiscountPercent.ToString("0")% OFF
                                         </span>
+                                    }
 
-                                        <strong>
-                                            ₹@listing.CurrentPrice.ToString("N2")
-                                        </strong>
-
-                                    </div>
-                                }
+                                </div>
                             }
-                            else
+
+
+                            <!-- Rating -->
+                            @if (product.Rating > 0)
                             {
-                                <p class="text-muted mt-3 mb-0">
-                                    No price information available.
-                                </p>
+                                <div class="mt-2">
+
+                                    <span class="badge bg-warning text-dark">
+                                        ★ @product.Rating.ToString("0.0")
+                                    </span>
+
+                                    @if (product.RatingCount > 0)
+                                    {
+                                        <small class="text-muted ms-1">
+                                            (@product.RatingCount.ToString("N0") ratings)
+                                        </small>
+                                    }
+
+                                </div>
                             }
 
-                            <a asp-action="Details"
-                               asp-route-id="@product.Id"
-                               class="btn btn-primary w-100 mt-3">
-                                View Details
-                            </a>
+
+                            <!-- Availability -->
+                            <div class="mt-2">
+
+                                @if (product.InStock)
+                                {
+                                    <span class="badge bg-success">
+                                        In Stock
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">
+                                        Out of Stock
+                                    </span>
+                                }
+
+                            </div>
+
+
+                            <!-- View Details Button -->
+                            <div class="mt-auto pt-4">
+
+                                <a asp-action="Details"
+                                   asp-route-url="@product.Url"
+                                   asp-route-itmId="@product.ItemId"
+                                   class="btn btn-primary w-100">
+
+                                    View Details
+
+                                </a>
+
+                            </div>
 
                         </div>
 

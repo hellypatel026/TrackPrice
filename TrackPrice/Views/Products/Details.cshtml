@@ -1,4 +1,4 @@
-﻿@model TrackPrice.Models.Product
+﻿@model TrackPrice.Models.ProductComparisonViewModel
 
 @{
     ViewData["Title"] = "Product Details";
@@ -6,26 +6,32 @@
 
 <div class="container py-5">
 
+    <!-- Back -->
     <div class="mb-4">
-        <a asp-action="Index" class="text-decoration-none">
-            ← Back to Products
+        <a asp-action="Index"
+           asp-route-search="@Model.FlipkartProduct.Title"
+           class="text-decoration-none">
+            ← Back to Search Results
         </a>
     </div>
 
+
+    <!-- Product Details -->
     <div class="card shadow-sm border-0">
+
         <div class="card-body p-4">
 
             <div class="row">
 
                 <!-- Product Image -->
-                <div class="col-md-4 text-center">
+                <div class="col-md-5 text-center">
 
-                    @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                    @if (!string.IsNullOrWhiteSpace(Model.FlipkartProduct.Image))
                     {
-                        <img src="@Model.ImageUrl"
+                        <img src="@Model.FlipkartProduct.Image"
                              class="img-fluid"
-                             style="max-height:350px; object-fit:contain;"
-                             alt="@Model.Name" />
+                             style="max-height:400px; object-fit:contain;"
+                             alt="@Model.FlipkartProduct.Title" />
                     }
                     else
                     {
@@ -36,98 +42,129 @@
 
                 </div>
 
+
                 <!-- Product Information -->
-                <div class="col-md-8">
+                <div class="col-md-7">
 
-                    <h1 class="fw-bold">@Model.Name</h1>
+                    <h1 class="fw-bold">
+                        @Model.FlipkartProduct.Title
+                    </h1>
 
-                    @if (!string.IsNullOrEmpty(Model.Category))
+                    @if (!string.IsNullOrWhiteSpace(Model.FlipkartProduct.Category))
                     {
                         <span class="badge bg-secondary mb-3">
-                            @Model.Category
+                            @Model.FlipkartProduct.Category
                         </span>
                     }
 
-                    @if (!string.IsNullOrEmpty(Model.Description))
+                    @if (!string.IsNullOrWhiteSpace(Model.FlipkartProduct.Subtitle))
                     {
                         <p class="text-muted">
-                            @Model.Description
+                            @Model.FlipkartProduct.Subtitle
                         </p>
                     }
 
                     <hr />
 
-                    <!-- Store Prices -->
-                    <h4 class="fw-bold mb-3">Store Prices</h4>
+                    <!-- Flipkart Price -->
+                    <div class="mb-3">
 
-                    @if (Model.ProductListings.Any())
+                        <small class="text-muted d-block">
+                            Flipkart Price
+                        </small>
+
+                        <span class="display-6 fw-bold">
+                            ₹@Model.FlipkartProduct.Price.ToString("N2")
+                        </span>
+
+                    </div>
+
+
+                    <!-- MRP -->
+                    @if (Model.FlipkartProduct.Mrp.HasValue &&
+                         Model.FlipkartProduct.Mrp.Value > Model.FlipkartProduct.Price)
                     {
-                        @foreach (var listing in Model.ProductListings)
+                        <div class="mb-3">
+
+                            <span class="text-muted text-decoration-line-through">
+                                ₹@Model.FlipkartProduct.Mrp.Value.ToString("N2")
+                            </span>
+
+                            @if (Model.FlipkartProduct.DiscountPercent > 0)
+                            {
+                                <span class="badge bg-success ms-2">
+                                    @Model.FlipkartProduct.DiscountPercent.ToString("0")% OFF
+                                </span>
+                            }
+
+                        </div>
+                    }
+
+
+                    <!-- Rating -->
+                    @if (Model.FlipkartProduct.Rating > 0)
+                    {
+                        <div class="mb-3">
+
+                            <span class="badge bg-warning text-dark">
+                                ★ @Model.FlipkartProduct.Rating.ToString("0.0")
+                            </span>
+
+                            @if (Model.FlipkartProduct.RatingCount > 0)
+                            {
+                                <span class="text-muted ms-2">
+                                    @Model.FlipkartProduct.RatingCount.ToString("N0")
+                                    ratings
+                                </span>
+                            }
+
+                        </div>
+                    }
+
+
+                    <!-- Availability -->
+                    <div class="mb-4">
+
+                        @if (Model.FlipkartProduct.InStock)
                         {
-                            <div class="border rounded p-3 mb-3">
-
-                                <div class="d-flex justify-content-between align-items-center">
-
-                                    <div>
-                                        <h5 class="mb-1">
-                                            @listing.Store.Name
-                                        </h5>
-
-                                        @if (listing.IsAvailable)
-                                        {
-                                            <span class="badge bg-success">
-                                                Available
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger">
-                                                Out of Stock
-                                            </span>
-                                        }
-                                    </div>
-
-                                    <div class="text-end">
-
-                                        <h4 class="fw-bold mb-2">
-                                            ₹@listing.CurrentPrice.ToString("N2")
-                                        </h4>
-
-                                        <a href="@listing.ProductUrl"
-                                           target="_blank"
-                                           class="btn btn-primary btn-sm">
-                                            Visit Store
-                                        </a>
-
-                                    </div>
-
-                                </div>
-
-                                <small class="text-muted">
-                                    Last updated:
-                                    @listing.LastUpdated.ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")
-                                </small>
-
-                            </div>
+                            <span class="badge bg-success">
+                                In Stock
+                            </span>
                         }
-                    }
-                    else
-                    {
-                        <p class="text-muted">
-                            No store price information available.
-                        </p>
-                    }
+                        else
+                        {
+                            <span class="badge bg-danger">
+                                Out of Stock
+                            </span>
+                        }
 
-                    <!-- Add to Watchlist -->
+                    </div>
+
+
+                    <!-- Visit Flipkart -->
+                    <a href="@Model.FlipkartProduct.Url"
+                       target="_blank"
+                       class="btn btn-primary">
+                        Visit Flipkart
+                    </a>
+
+
+                    <!-- Watchlist -->
                     <div class="mt-4">
 
-                        <form asp-controller="Watchlist"
-                              asp-action="Add"
+                        <form asp-controller="Products"
+                              asp-action="AddToWatchlist"
                               method="post">
 
+                            @Html.AntiForgeryToken()
+
                             <input type="hidden"
-                                   name="productId"
-                                   value="@Model.Id" />
+                                   name="url"
+                                   value="@Model.FlipkartProduct.Url" />
+
+                            <input type="hidden"
+                                   name="itmId"
+                                   value="@Model.FlipkartProduct.ItemId" />
 
                             <button type="submit"
                                     class="btn btn-outline-primary">
@@ -136,9 +173,14 @@
 
                         </form>
 
+                        <small class="text-muted d-block mt-2">
+                            Add this product to your personal watchlist.
+                        </small>
+
                     </div>
 
-                    <!-- Set Price Alert -->
+
+                    <!-- Price Alert -->
                     <div class="mt-4">
 
                         <h4 class="fw-bold">
@@ -146,39 +188,35 @@
                         </h4>
 
                         <p class="text-muted">
-                            Get notified when this product reaches your target price.
+                            Get notified when this product reaches
+                            your target price.
                         </p>
 
-                        <form asp-controller="PriceAlert"
-                              asp-action="Create"
-                              method="post">
+                        <div class="input-group"
+                             style="max-width:450px;">
 
-                            <input type="hidden"
-                                   name="productId"
-                                   value="@Model.Id" />
+                            <span class="input-group-text">
+                                ₹
+                            </span>
 
-                            <div class="input-group" style="max-width: 450px;">
+                            <input type="number"
+                                   class="form-control"
+                                   placeholder="Enter target price"
+                                   min="1"
+                                   step="0.01" />
 
-                                <span class="input-group-text">
-                                    ₹
-                                </span>
+                            <button type="button"
+                                    class="btn btn-warning"
+                                    disabled>
+                                Set Alert
+                            </button>
 
-                                <input type="number"
-                                       name="targetPrice"
-                                       class="form-control"
-                                       placeholder="Enter target price"
-                                       min="1"
-                                       step="0.01"
-                                       required />
+                        </div>
 
-                                <button type="submit"
-                                        class="btn btn-warning">
-                                    Set Alert
-                                </button>
-
-                            </div>
-
-                        </form>
+                        <small class="text-muted d-block mt-2">
+                            Price alert integration will be connected
+                            after API products are mapped to TrackPrice products.
+                        </small>
 
                     </div>
 
@@ -187,6 +225,164 @@
             </div>
 
         </div>
+
+    </div>
+
+
+    <!-- PRICE COMPARISON -->
+    <div class="card shadow-sm border-0 mt-4">
+
+        <div class="card-body p-4">
+
+            <h2 class="fw-bold mb-2">
+                Price Comparison
+            </h2>
+
+            <p class="text-muted">
+                Compare prices across available stores.
+            </p>
+
+
+            <div class="table-responsive">
+
+                <table class="table align-middle">
+
+                    <thead>
+
+                        <tr>
+                            <th>Store</th>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Availability</th>
+                            <th></th>
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        <!-- Flipkart -->
+                        <tr>
+
+                            <td>
+                                <strong>Flipkart</strong>
+                            </td>
+
+                            <td>
+                                @Model.FlipkartProduct.Title
+                            </td>
+
+                            <td>
+                                <strong>
+                                    ₹@Model.FlipkartProduct.Price.ToString("N2")
+                                </strong>
+                            </td>
+
+                            <td>
+
+                                @if (Model.FlipkartProduct.InStock)
+                                {
+                                    <span class="badge bg-success">
+                                        In Stock
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">
+                                        Out of Stock
+                                    </span>
+                                }
+
+                            </td>
+
+                            <td>
+
+                                <a href="@Model.FlipkartProduct.Url"
+                                   target="_blank"
+                                   class="btn btn-sm btn-primary">
+                                    Visit Store
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+
+                        <!-- Amazon Products -->
+                        @foreach (var amazonProduct in Model.AmazonProducts)
+                        {
+                            <tr>
+
+                                <td>
+                                    <strong>Amazon</strong>
+                                </td>
+
+                                <td>
+                                    @amazonProduct.Title
+                                </td>
+
+                                <td>
+
+                                    <strong>
+                                        ₹@amazonProduct.Price.ToString("N2")
+                                    </strong>
+
+                                </td>
+
+                                <td>
+
+                                    @if (amazonProduct.InStock)
+                                    {
+                                        <span class="badge bg-success">
+                                            In Stock
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">
+                                            Out of Stock
+                                        </span>
+                                    }
+
+                                </td>
+
+                                <td>
+
+                                    @if (!string.IsNullOrWhiteSpace(amazonProduct.Url))
+                                    {
+                                        <a href="@amazonProduct.Url"
+                                           target="_blank"
+                                           class="btn btn-sm btn-primary">
+                                            Visit Store
+                                        </a>
+                                    }
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <!-- No Amazon results -->
+            @if (!Model.AmazonProducts.Any())
+            {
+                <div class="alert alert-info mt-3 mb-0">
+
+                    <strong>Amazon:</strong>
+                    No matching products were returned by the API.
+
+                </div>
+            }
+
+        </div>
+
     </div>
 
 </div>

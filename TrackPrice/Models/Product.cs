@@ -5,6 +5,11 @@ namespace TrackPrice.Models
     public class Product
     {
         public int Id { get; set; }
+        [StringLength(100)]
+        public string? ExternalProductId { get; set; }
+
+        [StringLength(50)]
+        public string? Source { get; set; }
 
         [Required]
         [StringLength(200)]
