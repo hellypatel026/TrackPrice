@@ -4,23 +4,28 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TrackPrice.Data;
 using TrackPrice.Models;
-
+using TrackPrice.Services;
 namespace TrackPrice.Controllers
 {
     [Authorize]
     public class PriceAlertController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly ReefApiService _reefApiService;
 
-        public PriceAlertController(ApplicationDbContext context)
+        public PriceAlertController(
+            ApplicationDbContext context,
+            ReefApiService reefApiService)
         {
             _context = context;
+            _reefApiService = reefApiService;
         }
 
         // Show user's price alerts
         public async Task<IActionResult> Index()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
 
             if (userId == null)
             {
@@ -32,6 +37,7 @@ namespace TrackPrice.Controllers
                 .ThenInclude(p => p.ProductListings)
                 .ThenInclude(pl => pl.Store)
                 .Where(a => a.UserId == userId)
+                .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
 
             return View(alerts);
@@ -41,24 +47,32 @@ namespace TrackPrice.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
-            int productId,
-            decimal targetPrice)
+    int productId,
+    decimal targetPrice,
+    string url,
+    string itmId)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
 
             if (userId == null)
             {
                 return Challenge();
             }
 
+            // Target price must be greater than zero
             if (targetPrice <= 0)
             {
+                TempData["PriceAlertError"] =
+                    "Please enter a valid target price.";
+
                 return RedirectToAction(
                     "Details",
                     "Products",
                     new { id = productId });
             }
 
+            // Check whether product exists
             var productExists = await _context.Products
                 .AnyAsync(p => p.Id == productId);
 
@@ -66,24 +80,77 @@ namespace TrackPrice.Controllers
             {
                 return NotFound();
             }
+            // Get the latest Flipkart price
+            var flipkartProduct =
+                await _reefApiService.GetFlipkartProductAsync(
+                    url,
+                    itmId);
 
-            var alert = new PriceAlert
+            if (flipkartProduct == null)
             {
-                UserId = userId,
-                ProductId = productId,
-                TargetPrice = targetPrice,
-                IsTriggered = false,
-                CreatedAt = DateTime.UtcNow
-            };
+                TempData["PriceAlertError"] =
+                    "Unable to get the current product price.";
 
-            _context.PriceAlerts.Add(alert);
+                return RedirectToAction(
+                    "Details",
+                    "Products",
+                    new
+                    {
+                        url = url,
+                        itmId = itmId
+                    });
+            }
+
+            decimal currentPrice = flipkartProduct.Price;
+
+            // Check whether the user already has
+            // an active alert for this product
+            var existingAlert = await _context.PriceAlerts
+                .FirstOrDefaultAsync(a =>
+                    a.UserId == userId &&
+                    a.ProductId == productId &&
+                    a.IsActive);
+
+            if (existingAlert != null)
+            {
+                existingAlert.TargetPrice = targetPrice;
+                existingAlert.CurrentPrice = currentPrice;
+                existingAlert.TriggeredAt = null;
+                existingAlert.IsActive = true;
+            }
+            else
+            {
+                var alert = new PriceAlert
+                {
+                    UserId = userId,
+                    ProductId = productId,
+                    TargetPrice = targetPrice,
+
+                    // Current price can be updated later
+                    // by the price tracking service.
+                    CurrentPrice = currentPrice,
+
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    TriggeredAt = null
+                };
+
+                _context.PriceAlerts.Add(alert);
+            }
 
             await _context.SaveChangesAsync();
 
+            TempData["PriceAlertSuccess"] =
+                "Price alert has been created successfully.";
+
             return RedirectToAction(
-                "Details",
-                "Products",
-                new { id = productId });
+    "Details",
+    "Products",
+    new
+    {
+        url = url,
+        itmId = itmId
+    });
         }
     }
 }

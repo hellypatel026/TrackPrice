@@ -181,52 +181,79 @@
 
 
                     <!-- Price Alert -->
-                    <div class="mt-4">
+<div class="mt-4">
 
-                        <h4 class="fw-bold">
-                            🔔 Set Price Alert
-                        </h4>
+    <h4 class="fw-bold">
+        🔔 Set Price Alert
+    </h4>
 
-                        <p class="text-muted">
-                            Get notified when this product reaches
-                            your target price.
-                        </p>
+    <p class="text-muted">
+        Get notified when this product reaches
+        your target price.
+    </p>
 
-                        <div class="input-group"
-                             style="max-width:450px;">
+    @if (TempData["PriceAlertSuccess"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["PriceAlertSuccess"]
+        </div>
+    }
 
-                            <span class="input-group-text">
-                                ₹
-                            </span>
+    @if (TempData["PriceAlertError"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["PriceAlertError"]
+        </div>
+    }
 
-                            <input type="number"
-                                   class="form-control"
-                                   placeholder="Enter target price"
-                                   min="1"
-                                   step="0.01" />
+    <form asp-controller="PriceAlert"
+          asp-action="Create"
+          method="post">
 
-                            <button type="button"
-                                    class="btn btn-warning"
-                                    disabled>
-                                Set Alert
-                            </button>
+        @Html.AntiForgeryToken()
 
-                        </div>
+        <input type="hidden"
+               name="productId"
+               value="@ViewBag.ProductId" />
 
-                        <small class="text-muted d-block mt-2">
-                            Price alert integration will be connected
-                            after API products are mapped to TrackPrice products.
-                        </small>
+        <input type="hidden"
+       name="url"
+       value="@Model.FlipkartProduct.Url" />
 
-                    </div>
+<input type="hidden"
+       name="itmId"
+       value="@Model.FlipkartProduct.ItemId" />
+        <div class="input-group"
+             style="max-width:450px;">
 
-                </div>
+            <span class="input-group-text">
+                ₹
+            </span>
 
-            </div>
+            <input type="number"
+                   name="targetPrice"
+                   class="form-control"
+                   placeholder="Enter target price"
+                   min="1"
+                   step="0.01"
+                   required />
+
+            <button type="submit"
+                    class="btn btn-warning">
+                Set Alert
+            </button>
 
         </div>
 
-    </div>
+    </form>
+
+    <small class="text-muted d-block mt-2">
+        You will be notified when the tracked price
+        reaches your target price.
+    </small>
+
+</div>
+                    
 
 
     <!-- PRICE COMPARISON -->

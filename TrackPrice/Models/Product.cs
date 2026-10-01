@@ -5,11 +5,18 @@ namespace TrackPrice.Models
     public class Product
     {
         public int Id { get; set; }
+
         [StringLength(100)]
         public string? ExternalProductId { get; set; }
 
         [StringLength(50)]
         public string? Source { get; set; }
+
+        // Flipkart identifiers used for price checking
+        public string? ProductUrl { get; set; }
+
+        [StringLength(100)]
+        public string? ItemId { get; set; }
 
         [Required]
         [StringLength(200)]

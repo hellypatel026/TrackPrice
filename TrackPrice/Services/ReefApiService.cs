@@ -249,13 +249,29 @@ namespace TrackPrice.Services
         }
 
         private static decimal GetDecimal(
-            JsonElement element,
-            string property)
+    JsonElement element,
+    string property)
         {
-            if (element.TryGetProperty(property, out var value) &&
+            if (!element.TryGetProperty(property, out var value))
+            {
+                return 0;
+            }
+
+            if (value.ValueKind == JsonValueKind.Null)
+            {
+                return 0;
+            }
+
+            if (value.ValueKind == JsonValueKind.Number &&
                 value.TryGetDecimal(out var result))
             {
                 return result;
+            }
+
+            if (value.ValueKind == JsonValueKind.String &&
+                decimal.TryParse(value.GetString(), out var stringResult))
+            {
+                return stringResult;
             }
 
             return 0;

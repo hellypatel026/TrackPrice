@@ -33,10 +33,10 @@
                         <div class="card-body">
 
                             <h5 class="fw-bold">
-                                @alert.Product.Name
+                                @alert.Product?.Name
                             </h5>
 
-                            @if (!string.IsNullOrEmpty(alert.Product.Category))
+                            @if (!string.IsNullOrEmpty(alert.Product?.Category))
                             {
                                 <span class="badge bg-secondary mb-3">
                                     @alert.Product.Category
@@ -50,13 +50,11 @@
                                 ₹@alert.TargetPrice.ToString("N2")
                             </p>
 
-                            @if (alert.Product.ProductListings.Any())
+                            @if (alert.CurrentPrice > 0)
                             {
                                 <p class="mb-2">
                                     <strong>Current Price:</strong>
-                                    ₹@(alert.Product.ProductListings
-                                        .Min(p => p.CurrentPrice)
-                                        .ToString("N2"))
+                                    ₹@alert.CurrentPrice.ToString("N2")
                                 </p>
                             }
                             else
@@ -67,7 +65,7 @@
                                 </p>
                             }
 
-                            @if (alert.IsTriggered)
+                            @if (!alert.IsActive)
                             {
                                 <span class="badge bg-success">
                                     Alert Triggered
@@ -80,12 +78,31 @@
                                 </span>
                             }
 
-                            <p class="text-muted small mt-3 mb-0">
+                            <p class="text-muted small mt-3 mb-3">
                                 Created:
                                 @(alert.CreatedAt
                                     .ToLocalTime()
                                     .ToString("dd MMM yyyy"))
                             </p>
+
+                            <div class="d-flex gap-2 flex-wrap">
+
+                                <a asp-controller="Products"
+                                   asp-action="Details"
+                                   asp-route-url="@alert.Product?.ProductUrl"
+                                   asp-route-itmId="@alert.Product?.ItemId"
+                                   class="btn btn-primary btn-sm">
+                                    View Product
+                                </a>
+
+                                <a asp-controller="PriceHistory"
+                                   asp-action="Index"
+                                   asp-route-productId="@alert.ProductId"
+                                   class="btn btn-outline-info btn-sm">
+                                    View Price History
+                                </a>
+
+                            </div>
 
                         </div>
 

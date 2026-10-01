@@ -62,6 +62,35 @@ namespace TrackPrice.Controllers
                 return NotFound();
             }
 
+            // Make sure this API product exists in the local database.
+            // Price Alerts and Watchlist use the local Product.Id.
+            var product = await _context.Products
+                .FirstOrDefaultAsync(p =>
+                    p.ExternalProductId == flipkartProduct.ProductId &&
+                    p.Source == "Flipkart");
+
+            if (product == null)
+            {
+                product = new Product
+                {
+                    Name = flipkartProduct.Title,
+                    Description = flipkartProduct.Subtitle,
+                    Category = flipkartProduct.Category,
+                    ImageUrl = flipkartProduct.Image,
+                    ExternalProductId = flipkartProduct.ProductId,
+                    Source = "Flipkart",
+                    ProductUrl = flipkartProduct.Url,
+                    ItemId = flipkartProduct.ItemId,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Products.Add(product);
+                await _context.SaveChangesAsync();
+            }
+
+            // Make the local Product.Id available to the Details view.
+            ViewBag.ProductId = product.Id;
+
             // Search Amazon using the Flipkart product title
             var amazonProducts =
                 await _amazonApiService.SearchAmazonAsync(
