@@ -157,15 +157,37 @@ namespace TrackPrice.Services
                     }
 
                     // Record price history
-                    var history = new PriceHistory
+                    // Record price history only when the price changes
+                    var lastHistory = await context.PriceHistories
+                        .Where(h => h.ProductListingId == listing.Id)
+                        .OrderByDescending(h => h.RecordedAt)
+                        .FirstOrDefaultAsync(cancellationToken);
+
+                    if (lastHistory == null ||
+                        lastHistory.Price != currentPrice)
                     {
-                        ProductListingId = listing.Id,
-                        Price = currentPrice,
-                        RecordedAt = DateTime.UtcNow
-                    };
+                        var history = new PriceHistory
+                        {
+                            ProductListingId = listing.Id,
+                            Price = currentPrice,
+                            RecordedAt = DateTime.UtcNow
+                        };
 
-                    context.PriceHistories.Add(history);
+                        context.PriceHistories.Add(history);
 
+                        _logger.LogInformation(
+                            "Price history recorded for product {ProductId}. " +
+                            "Price: {CurrentPrice}.",
+                            alert.ProductId,
+                            currentPrice);
+                    }
+                    else
+                    {
+                        _logger.LogInformation(
+                            "Price unchanged for product {ProductId}. " +
+                            "No new price history record created.",
+                            alert.ProductId);
+                    }
                     // Trigger the alert when target price is reached
                     if (currentPrice <= alert.TargetPrice)
                     {
