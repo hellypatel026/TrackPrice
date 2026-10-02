@@ -67,9 +67,13 @@ namespace TrackPrice.Controllers
                     "Please enter a valid target price.";
 
                 return RedirectToAction(
-                    "Details",
-                    "Products",
-                    new { id = productId });
+    "Details",
+    "Products",
+    new
+    {
+        url = url,
+        itmId = itmId
+    });
             }
 
             // Check whether product exists
@@ -138,6 +142,8 @@ namespace TrackPrice.Controllers
                 _context.PriceAlerts.Add(alert);
             }
 
+
+
             await _context.SaveChangesAsync();
 
             TempData["PriceAlertSuccess"] =
@@ -151,6 +157,38 @@ namespace TrackPrice.Controllers
         url = url,
         itmId = itmId
     });
+        }
+        // Deactivate a price alert
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Deactivate(int id)
+        {
+            var userId = User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+            if (userId == null)
+            {
+                return Challenge();
+            }
+
+            var alert = await _context.PriceAlerts
+                .FirstOrDefaultAsync(a =>
+                    a.Id == id &&
+                    a.UserId == userId);
+
+            if (alert == null)
+            {
+                return NotFound();
+            }
+
+            alert.IsActive = false;
+
+            await _context.SaveChangesAsync();
+
+            TempData["PriceAlertSuccess"] =
+                "Price alert has been deactivated.";
+
+            return RedirectToAction(nameof(Index));
         }
     }
 }

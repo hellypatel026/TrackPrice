@@ -102,6 +102,28 @@
                                     View Price History
                                 </a>
 
+                                @if (alert.IsActive)
+                                {
+                                    <form asp-controller="PriceAlert"
+                                          asp-action="Deactivate"
+                                          method="post"
+                                          class="d-inline">
+
+                                        @Html.AntiForgeryToken()
+
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@alert.Id" />
+
+                                        <button type="submit"
+                                                class="btn btn-outline-danger btn-sm"
+                                                onclick="return confirm('Are you sure you want to deactivate this price alert?');">
+                                            Deactivate
+                                        </button>
+
+                                    </form>
+                                }
+
                             </div>
 
                         </div>
