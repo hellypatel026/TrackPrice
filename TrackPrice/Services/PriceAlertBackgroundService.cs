@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using TrackPrice.Data;
 using TrackPrice.Models;
 
@@ -8,6 +9,7 @@ namespace TrackPrice.Services
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<PriceAlertBackgroundService> _logger;
+        private readonly EmailNotificationService _emailNotificationService;
 
         public PriceAlertBackgroundService(
             IServiceScopeFactory scopeFactory,
@@ -55,6 +57,13 @@ namespace TrackPrice.Services
             var reefApiService =
                 scope.ServiceProvider
                     .GetRequiredService<ReefApiService>();
+            var emailNotificationService =
+    scope.ServiceProvider
+        .GetRequiredService<EmailNotificationService>();
+
+            var userManager =
+                scope.ServiceProvider
+                    .GetRequiredService<UserManager<ApplicationUser>>();
 
             var alerts = await context.PriceAlerts
                 .Include(a => a.Product)
@@ -191,6 +200,28 @@ namespace TrackPrice.Services
                     // Trigger the alert when target price is reached
                     if (currentPrice <= alert.TargetPrice)
                     {
+                        var user =
+                            await userManager.FindByIdAsync(alert.UserId);
+
+                        if (user != null &&
+                            !string.IsNullOrWhiteSpace(user.Email))
+                        {
+                            await emailNotificationService
+                                .SendPriceAlertEmailAsync(
+                                    user.Email,
+                                    alert.Product.Name,
+                                    alert.TargetPrice,
+                                    currentPrice,
+                                    alert.Product.ProductUrl);
+                        }
+                        else
+                        {
+                            _logger.LogWarning(
+                                "Could not send price alert email for " +
+                                "alert {AlertId}. User email was not found.",
+                                alert.Id);
+                        }
+
                         alert.IsActive = false;
                         alert.TriggeredAt = DateTime.UtcNow;
 

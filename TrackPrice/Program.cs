@@ -26,7 +26,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient<ReefApiService>();
 builder.Services.AddHttpClient<AmazonApiService>();
-
+builder.Services.AddScoped<EmailNotificationService>();
 builder.Services.AddHostedService<PriceAlertBackgroundService>();
 builder.Services.AddRazorPages();
 
