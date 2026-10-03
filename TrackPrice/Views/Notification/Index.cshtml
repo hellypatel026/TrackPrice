@@ -1,0 +1,114 @@
+﻿@model IEnumerable<TrackPrice.Models.Notification>
+
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold">Notifications</h1>
+            <p class="text-muted">
+                Your latest TrackPrice notifications
+            </p>
+        </div>
+
+        @if (Model.Any(n => !n.IsRead))
+        {
+            <form asp-controller="Notification"
+                  asp-action="MarkAllAsRead"
+                  method="post">
+
+                @Html.AntiForgeryToken()
+
+                <button type="submit"
+                        class="btn btn-outline-primary">
+                    Mark All as Read
+                </button>
+            </form>
+        }
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            You don't have any notifications yet.
+        </div>
+    }
+    else
+    {
+        <div class="list-group">
+
+            @foreach (var notification in Model)
+            {
+                <div class="list-group-item
+                    @(notification.IsRead ? "" : "bg-light")">
+
+                    <div class="d-flex justify-content-between
+                        align-items-start">
+
+                        <div class="me-3">
+
+                            <h5 class="mb-1 fw-bold">
+                                @notification.Title
+
+                                @if (!notification.IsRead)
+                                {
+                                    <span class="badge bg-primary ms-2">
+                                        New
+                                    </span>
+                                }
+                            </h5>
+
+                            <p class="mb-2">
+                                @notification.Message
+                            </p>
+
+                            <small class="text-muted">
+                                @notification.CreatedAt
+                                .ToLocalTime()
+                                .ToString("dd MMM yyyy, hh:mm tt")
+                            </small>
+
+                        </div>
+
+                        <div>
+                            @if (!notification.IsRead)
+                            {
+                                <form asp-controller="Notification"
+                                      asp-action="MarkAsRead"
+                                      method="post">
+
+                                    @Html.AntiForgeryToken()
+
+                                    <input type="hidden"
+                                           name="id"
+                                           value="@notification.Id" />
+
+                                    <button type="submit"
+                                            class="btn btn-primary btn-sm">
+                                        View
+                                    </button>
+
+                                </form>
+                            }
+                            else if (!string.IsNullOrWhiteSpace(
+                                notification.LinkUrl))
+                            {
+                                <a href="@notification.LinkUrl"
+                                   class="btn btn-outline-primary btn-sm">
+                                    View Product
+                                </a>
+                            }
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    }
+
+</div>

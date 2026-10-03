@@ -23,6 +23,7 @@ namespace TrackPrice.Data
         public DbSet<Watchlist> Watchlists { get; set; }
 
         public DbSet<PriceAlert> PriceAlerts { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

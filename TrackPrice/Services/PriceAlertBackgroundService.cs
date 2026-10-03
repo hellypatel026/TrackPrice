@@ -9,7 +9,7 @@ namespace TrackPrice.Services
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<PriceAlertBackgroundService> _logger;
-        private readonly EmailNotificationService _emailNotificationService;
+        
 
         public PriceAlertBackgroundService(
             IServiceScopeFactory scopeFactory,
@@ -222,13 +222,30 @@ namespace TrackPrice.Services
                                 alert.Id);
                         }
 
+                        var notification = new Notification
+                        {
+                            UserId = alert.UserId,
+                            Title = "Price Alert Triggered",
+                            Message =
+                                $"The price of {alert.Product.Name} " +
+                                $"has reached your target price. " +
+                                $"Current price: ₹{currentPrice:N2}. " +
+                                $"Target price: ₹{alert.TargetPrice:N2}.",
+                            IsRead = false,
+                            CreatedAt = DateTime.UtcNow,
+                            LinkUrl = alert.Product.ProductUrl
+                        };
+
+                        context.Notifications.Add(notification);
+
                         alert.IsActive = false;
                         alert.TriggeredAt = DateTime.UtcNow;
 
                         _logger.LogInformation(
                             "Price alert {AlertId} triggered. " +
                             "Current price: {CurrentPrice}, " +
-                            "Target price: {TargetPrice}",
+                            "Target price: {TargetPrice}. " +
+                            "In-app notification created.",
                             alert.Id,
                             currentPrice,
                             alert.TargetPrice);

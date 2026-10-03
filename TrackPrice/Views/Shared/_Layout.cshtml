@@ -8,6 +8,91 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/TrackPrice.styles.css" asp-append-version="true" />
+    <style>
+            .trackprice-toast {
+                position: fixed;
+                top: 80px;
+                right: 25px;
+                width: 360px;
+                max-width: calc(100vw - 30px);
+                background: white;
+                border: 1px solid #dee2e6;
+                border-radius: 12px;
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+                z-index: 9999;
+                overflow: hidden;
+                transform: translateX(420px);
+                opacity: 0;
+                transition: all 0.35s ease;
+                pointer-events: none;
+            }
+
+            .trackprice-toast.show {
+                transform: translateX(0);
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            .trackprice-toast-header {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 14px 16px;
+                border-bottom: 1px solid #eeeeee;
+            }
+
+            .trackprice-toast-icon {
+                font-size: 22px;
+            }
+
+            .trackprice-toast-header strong {
+                flex: 1;
+                font-size: 16px;
+            }
+
+            .trackprice-toast-close {
+                border: none;
+                background: transparent;
+                font-size: 24px;
+                line-height: 1;
+                cursor: pointer;
+                color: #777;
+            }
+
+            .trackprice-toast-body {
+                padding: 14px 16px 16px;
+            }
+
+            #priceAlertToastMessage {
+                font-size: 14px;
+                color: #555;
+                margin-bottom: 12px;
+            }
+
+            .trackprice-toast-link {
+                display: inline-block;
+                padding: 8px 14px;
+                background: #0d6efd;
+                color: white;
+                text-decoration: none;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+
+            .trackprice-toast-link:hover {
+                color: white;
+                opacity: 0.9;
+            }
+
+            @@media (max-width: 576px) {
+                .trackprice-toast {
+                    top: 70px;
+                    right: 15px;
+                    left: 15px;
+                    width: auto;
+                }
+            }
+    </style>
 </head>
 <body>
     <header>
@@ -59,6 +144,21 @@
                                 Price Alerts
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link"
+                               asp-controller="Notification"
+                               asp-action="Index">
+
+                                🔔 Notifications
+
+                                <span id="notificationBadge"
+                                      class="badge bg-danger"
+                                      style="display:none;">
+                                    0
+                                </span>
+
+                            </a>
+                        </li>
 
                     </ul>
 
@@ -84,5 +184,180 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <div id="priceAlertToast"
+             class="trackprice-toast"
+             role="alert"
+             aria-live="assertive"
+             aria-atomic="true">
+
+            <div class="trackprice-toast-header">
+                <span class="trackprice-toast-icon">🔔</span>
+
+                <strong id="priceAlertToastTitle">
+                    Price Alert
+                </strong>
+
+                <button type="button"
+                        class="trackprice-toast-close"
+                        onclick="hidePriceAlertToast()">
+                    ×
+                </button>
+            </div>
+
+            <div class="trackprice-toast-body">
+
+                <div id="priceAlertToastMessage">
+                    A price alert has been triggered.
+                </div>
+
+                <a id="priceAlertToastLink"
+                   href="/Notification"
+                   class="trackprice-toast-link">
+                    Check Notifications
+                </a>
+
+            </div>
+
+        </div>
+    }
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <script>
+                let priceAlertToastTimer = null;
+
+                async function checkForNotifications() {
+                    try {
+                        const response = await fetch('/Notification/Unread', {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json'
+                            },
+                            cache: 'no-store'
+                        });
+
+                        if (!response.ok) {
+                            return;
+                        }
+
+                        const notifications = await response.json();
+                        updateNotificationBadge(notifications.length);
+                        function updateNotificationBadge(count) {
+
+                            const badge =
+                                document.getElementById('notificationBadge');
+
+                            if (!badge) {
+                                return;
+                            }
+
+                            if (count > 0) {
+                                badge.textContent = count;
+                                badge.style.display = 'inline-block';
+                            }
+                            else {
+                                badge.style.display = 'none';
+                            }
+                        }
+                        if (!notifications || notifications.length === 0) {
+                            return;
+                        }
+
+                        const shownNotifications =
+                            JSON.parse(
+                                localStorage.getItem('trackpriceShownNotifications') || '[]'
+                            );
+
+                        const newNotification = notifications.find(
+                            notification =>
+                                !shownNotifications.includes(notification.id)
+                        );
+
+                        if (!newNotification) {
+                            return;
+                        }
+
+                        showPriceAlertToast(newNotification);
+
+                        shownNotifications.push(newNotification.id);
+
+                        // Keep only the latest 50 IDs.
+                        const recentIds = shownNotifications.slice(-50);
+
+                        localStorage.setItem(
+                            'trackpriceShownNotifications',
+                            JSON.stringify(recentIds)
+                        );
+                    }
+                    catch (error) {
+                        console.error(
+                            'Could not check TrackPrice notifications.',
+                            error
+                        );
+                    }
+                }
+
+                function showPriceAlertToast(notification) {
+
+                    const toast =
+                        document.getElementById('priceAlertToast');
+
+                    const title =
+                        document.getElementById('priceAlertToastTitle');
+
+                    const message =
+                        document.getElementById('priceAlertToastMessage');
+
+                    const link =
+                        document.getElementById('priceAlertToastLink');
+
+                    if (!toast || !title || !message || !link) {
+                        return;
+                    }
+
+                    title.textContent =
+                        notification.title || 'Price Alert';
+
+                    message.textContent =
+                        notification.message ||
+                        'A price alert has been triggered.';
+
+                    link.href =
+                        notification.linkUrl ||
+                        '/Notification';
+
+                    toast.classList.add('show');
+
+                    if (priceAlertToastTimer) {
+                        clearTimeout(priceAlertToastTimer);
+                    }
+
+                    priceAlertToastTimer = setTimeout(
+                        hidePriceAlertToast,
+                        10000
+                    );
+                }
+
+                function hidePriceAlertToast() {
+
+                    const toast =
+                        document.getElementById('priceAlertToast');
+
+                    if (toast) {
+                        toast.classList.remove('show');
+                    }
+                }
+
+                // Check immediately when the page loads.
+                checkForNotifications();
+
+                // Check every 10 seconds.
+                setInterval(
+                    checkForNotifications,
+                    10000
+                );
+        </script>
+    }
 </body>
 </html>
