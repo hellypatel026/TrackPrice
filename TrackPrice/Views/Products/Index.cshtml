@@ -2,6 +2,12 @@
 
 @{
     ViewData["Title"] = "Search Results";
+
+    var selectedSort =
+        ViewBag.Sort as string ?? "";
+
+    var search =
+        ViewBag.Search as string ?? "";
 }
 
 <div class="container py-5">
@@ -13,26 +19,191 @@
             Search Results
         </h1>
 
-        @if (!string.IsNullOrWhiteSpace(ViewBag.Search))
+        @if (!string.IsNullOrWhiteSpace(search))
         {
             <p class="text-muted mb-0">
                 Results for
-                "<strong>@ViewBag.Search</strong>"
+                "<strong>@search</strong>"
             </p>
         }
 
     </div>
 
 
+    <!-- Sorting -->
+    @if (Model.Any())
+    {
+        <div class="card shadow-sm border-0 mb-4">
+
+            <div class="card-body">
+
+                <form asp-action="Index"
+                      method="get">
+
+                    <!-- Keep current search -->
+                    <input type="hidden"
+                           name="search"
+                           value="@search" />
+
+                    <div class="row g-3 align-items-end">
+
+                        <!-- Sort -->
+                        <div class="col-md-8">
+
+                            <label for="sort"
+                                   class="form-label fw-semibold">
+                                Sort By
+                            </label>
+
+                            <select id="sort"
+                                    name="sort"
+                                    class="form-select">
+
+                                <option value="">
+                                    Default
+                                </option>
+
+                                @if (selectedSort == "price_asc")
+                                {
+                                    <option value="price_asc"
+                                            selected>
+                                        Price: Low to High
+                                    </option>
+                                }
+                                else
+                                {
+                                    <option value="price_asc">
+                                        Price: Low to High
+                                    </option>
+                                }
+
+                                @if (selectedSort == "price_desc")
+                                {
+                                    <option value="price_desc"
+                                            selected>
+                                        Price: High to Low
+                                    </option>
+                                }
+                                else
+                                {
+                                    <option value="price_desc">
+                                        Price: High to Low
+                                    </option>
+                                }
+
+                                @if (selectedSort == "name_asc")
+                                {
+                                    <option value="name_asc"
+                                            selected>
+                                        Name: A to Z
+                                    </option>
+                                }
+                                else
+                                {
+                                    <option value="name_asc">
+                                        Name: A to Z
+                                    </option>
+                                }
+
+                                @if (selectedSort == "name_desc")
+                                {
+                                    <option value="name_desc"
+                                            selected>
+                                        Name: Z to A
+                                    </option>
+                                }
+                                else
+                                {
+                                    <option value="name_desc">
+                                        Name: Z to A
+                                    </option>
+                                }
+
+                            </select>
+
+                        </div>
+
+
+                        <!-- Apply -->
+                        <div class="col-md-2">
+
+                            <button type="submit"
+                                    class="btn btn-primary w-100">
+
+                                Apply
+
+                            </button>
+
+                        </div>
+
+
+                        <!-- Clear -->
+                        <div class="col-md-2">
+
+                            @if (!string.IsNullOrWhiteSpace(selectedSort))
+                            {
+                                <a asp-action="Index"
+                                   asp-route-search="@search"
+                                   class="btn btn-outline-secondary w-100">
+
+                                    Clear
+
+                                </a>
+                            }
+                            else
+                            {
+                                <button type="button"
+                                        class="btn btn-outline-secondary w-100"
+                                        disabled>
+
+                                    Clear
+
+                                </button>
+                            }
+
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+    }
+
+
     <!-- No Results -->
     @if (!Model.Any())
     {
         <div class="alert alert-info">
-            No products found.
+
+            <strong>No products found.</strong>
+
+            @if (!string.IsNullOrWhiteSpace(search))
+            {
+                <div class="mt-1">
+                    Try another search term.
+                </div>
+            }
+
         </div>
     }
     else
     {
+        <!-- Result Count -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+
+            <span class="text-muted">
+                Showing
+                <strong>@Model.Count()</strong>
+                product@(Model.Count() == 1 ? "" : "s")
+            </span>
+
+        </div>
+
+
+        <!-- Product Cards -->
         <div class="row g-4">
 
             @foreach (var product in Model)
@@ -68,15 +239,6 @@
                             <h5 class="card-title fw-bold">
                                 @product.Title
                             </h5>
-
-
-                            <!-- Category -->
-                            @if (!string.IsNullOrWhiteSpace(product.Category))
-                            {
-                                <span class="badge bg-secondary align-self-start mb-3">
-                                    @product.Category
-                                </span>
-                            }
 
 
                             <!-- Price -->

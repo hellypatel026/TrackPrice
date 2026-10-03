@@ -24,10 +24,15 @@ namespace TrackPrice.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index(string search)
+        public async Task<IActionResult> Index(
+            string? search,
+            string? sort)
         {
             if (string.IsNullOrWhiteSpace(search))
             {
+                ViewBag.Search = "";
+                ViewBag.Sort = "";
+
                 return View(new List<ReefApiProduct>());
             }
 
@@ -36,9 +41,40 @@ namespace TrackPrice.Controllers
             var products =
                 await _reefApiService.SearchFlipkartAsync(search);
 
-            ViewBag.Search = search;
+            var productList = products.ToList();
 
-            return View(products);
+            // Sorting
+            switch (sort)
+            {
+                case "price_asc":
+                    productList = productList
+                        .OrderBy(p => p.Price)
+                        .ToList();
+                    break;
+
+                case "price_desc":
+                    productList = productList
+                        .OrderByDescending(p => p.Price)
+                        .ToList();
+                    break;
+
+                case "name_asc":
+                    productList = productList
+                        .OrderBy(p => p.Title)
+                        .ToList();
+                    break;
+
+                case "name_desc":
+                    productList = productList
+                        .OrderByDescending(p => p.Title)
+                        .ToList();
+                    break;
+            }
+
+            ViewBag.Search = search;
+            ViewBag.Sort = sort ?? "";
+
+            return View(productList);
         }
 
         public async Task<IActionResult> Details(
@@ -122,11 +158,12 @@ namespace TrackPrice.Controllers
 
             return View(comparisonModel);
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddToWatchlist(
-    string url,
-    string itmId)
+            string url,
+            string itmId)
         {
             if (string.IsNullOrWhiteSpace(url) ||
                 string.IsNullOrWhiteSpace(itmId))
@@ -163,6 +200,8 @@ namespace TrackPrice.Controllers
                     ImageUrl = flipkartProduct.Image,
                     ExternalProductId = flipkartProduct.ProductId,
                     Source = "Flipkart",
+                    ProductUrl = flipkartProduct.Url,
+                    ItemId = flipkartProduct.ItemId,
                     CreatedAt = DateTime.UtcNow
                 };
 
