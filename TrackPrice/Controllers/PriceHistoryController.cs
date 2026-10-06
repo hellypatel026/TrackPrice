@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using TrackPrice.Data;
 
 namespace TrackPrice.Controllers
@@ -16,45 +15,139 @@ namespace TrackPrice.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index(int productId)
+        public async Task<IActionResult> Index(int? productId)
         {
-            var userId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
-
-            if (userId == null)
+            if (!productId.HasValue)
             {
-                return Challenge();
+                return View(new PriceHistoryViewModel());
             }
 
             var product = await _context.Products
-                .FirstOrDefaultAsync(p => p.Id == productId);
+                .Include(p => p.ProductListings)
+                    .ThenInclude(pl => pl.Store)
+                .FirstOrDefaultAsync(p => p.Id == productId.Value);
 
             if (product == null)
             {
                 return NotFound();
             }
 
-            var hasAccess = await _context.PriceAlerts
-                .AnyAsync(a =>
-                    a.ProductId == productId &&
-                    a.UserId == userId);
+            var listing = product.ProductListings
+                .OrderByDescending(pl => pl.LastUpdated)
+                .FirstOrDefault();
 
-            if (!hasAccess)
+            if (listing == null)
             {
-                return Forbid();
+                return View(new PriceHistoryViewModel
+                {
+                    ProductId = product.Id,
+                    ProductName = product.Name,
+                    StoreName = "Unknown",
+                    History = new List<DailyPricePoint>()
+                });
             }
 
             var history = await _context.PriceHistories
-                .Include(h => h.ProductListing)
-                .ThenInclude(pl => pl.Store)
-                .Where(h =>
-                    h.ProductListing.ProductId == productId)
-                .OrderByDescending(h => h.RecordedAt)
+                .Where(h => h.ProductListingId == listing.Id)
+                .OrderBy(h => h.RecordedAt)
                 .ToListAsync();
 
-            ViewBag.Product = product;
+            var dailyPrices = BuildDailyPriceHistory(
+                history,
+                listing.LastUpdated,
+                listing.CurrentPrice);
 
-            return View(history);
+            var viewModel = new PriceHistoryViewModel
+            {
+                ProductId = product.Id,
+                ProductName = product.Name,
+                StoreName = listing.Store?.Name ?? "Unknown",
+                CurrentPrice = listing.CurrentPrice,
+                History = dailyPrices
+            };
+
+            return View(viewModel);
         }
+
+        private static List<DailyPricePoint> BuildDailyPriceHistory(
+            List<Models.PriceHistory> history,
+            DateTime listingLastUpdated,
+            decimal currentPrice)
+        {
+            var result = new List<DailyPricePoint>();
+
+            if (history == null || history.Count == 0)
+            {
+                return result;
+            }
+
+            var firstDate = history
+                .Min(h => h.RecordedAt)
+                .Date;
+
+            var lastDate = DateTime.UtcNow.Date;
+
+            if (lastDate < firstDate)
+            {
+                lastDate = firstDate;
+            }
+
+            var orderedHistory = history
+                .OrderBy(h => h.RecordedAt)
+                .ToList();
+
+            var historyIndex = 0;
+            decimal? effectivePrice = null;
+
+            for (var date = firstDate; date <= lastDate; date = date.AddDays(1))
+            {
+                while (historyIndex < orderedHistory.Count &&
+                       orderedHistory[historyIndex].RecordedAt.Date <= date)
+                {
+                    effectivePrice = orderedHistory[historyIndex].Price;
+                    historyIndex++;
+                }
+
+                if (!effectivePrice.HasValue)
+                {
+                    continue;
+                }
+
+                if (date == lastDate &&
+                    listingLastUpdated.Date == date)
+                {
+                    effectivePrice = currentPrice;
+                }
+
+                result.Add(new DailyPricePoint
+                {
+                    Date = date,
+                    Price = effectivePrice.Value
+                });
+            }
+
+            return result;
+        }
+    }
+
+    public class PriceHistoryViewModel
+    {
+        public int ProductId { get; set; }
+
+        public string ProductName { get; set; } = string.Empty;
+
+        public string StoreName { get; set; } = string.Empty;
+
+        public decimal CurrentPrice { get; set; }
+
+        public List<DailyPricePoint> History { get; set; }
+            = new List<DailyPricePoint>();
+    }
+
+    public class DailyPricePoint
+    {
+        public DateTime Date { get; set; }
+
+        public decimal Price { get; set; }
     }
 }
